@@ -1,6 +1,6 @@
 package com.example.rankmanagementsystem.controller;
 
-import com.example.rankmanagementsystem.Service.StudentService;
+import com.example.rankmanagementsystem.service.StudentService;
 import com.example.rankmanagementsystem.enums.Category;
 import com.example.rankmanagementsystem.model.Student;
 import org.springframework.beans.factory.annotation.Autowired;

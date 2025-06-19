@@ -1,4 +1,4 @@
-package com.example.rankmanagementsystem.Service;
+package com.example.rankmanagementsystem.service;
 
 import com.example.rankmanagementsystem.enums.Category;
 import com.example.rankmanagementsystem.model.Student;
