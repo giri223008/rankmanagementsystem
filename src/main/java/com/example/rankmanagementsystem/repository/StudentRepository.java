@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
-    List<Student> findByCategoryOrderByCategoryRankAsc(Category category);
+    //List<Student> findByCategoryOrderByCategoryRankAsc(Category category);
+    List<Student> findAllByCategoryOrderByCategoryRankAsc(Category category);
     List<Student> findAllByOrderByGeneralRankAsc();
 }

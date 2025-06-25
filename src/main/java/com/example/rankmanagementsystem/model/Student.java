@@ -1,6 +1,7 @@
 package com.example.rankmanagementsystem.model;
 
 import com.example.rankmanagementsystem.enums.Category;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -26,10 +27,10 @@ public class Student {
 
     @DecimalMin(value = "52.5", inclusive = true)
     @DecimalMax(value = "200.0", inclusive = true)
-    private double cutoff;
+    private Double cutoff;
 
     @Enumerated(EnumType.STRING)
-    private Category category;
+    private Category category; //
 
     private int generalRank;
     private int categoryRank;

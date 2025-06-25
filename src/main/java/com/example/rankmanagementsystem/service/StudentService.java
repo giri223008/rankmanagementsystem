@@ -1,80 +1,85 @@
 package com.example.rankmanagementsystem.service;
 
 import com.example.rankmanagementsystem.enums.Category;
+import com.example.rankmanagementsystem.exception.BadRequestException;
+import com.example.rankmanagementsystem.exception.ResourceNotFoundException;
 import com.example.rankmanagementsystem.model.Student;
 import com.example.rankmanagementsystem.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class StudentService {
     @Autowired
     private StudentRepository repository;
 
-    public boolean storeStudents(List<Student> students) {
-        if (students.stream().map(Student::getRollNo).distinct().count() != students.size()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate roll numbers");
+    public void saveAllStudents(List<Student> inputList) {
+        if (inputList.stream().map(Student::getRollNo).distinct().count() != inputList.size()) {
+            throw new BadRequestException("Duplicate roll numbers found.");
+        }
+
+        for (Student s : inputList) {
+            if (!s.getSchoolCode().matches("^[A-Z]{3}\\d{3}$")) {
+                throw new BadRequestException("Invalid school code for rollNo: " + s.getRollNo());
+            }
+            if (s.getCutoff() < 52.5 || s.getCutoff() > 200.0) {
+                throw new BadRequestException("Invalid cutoff for rollNo: " + s.getRollNo());
+            }
         }
 
         repository.deleteAll();
 
-        // Sort by cutoff descending for ranking
-        List<Student> sorted = students.stream()
+        List<Student> students = inputList.stream()
                 .sorted(Comparator.comparingDouble(Student::getCutoff).reversed())
-                .toList();
+                .collect(Collectors.toList());
 
-        // General rank
-        for (int i = 0; i < sorted.size(); i++) {
-            sorted.get(i).setGeneralRank(i + 1);
-        }
+        // Assign general ranks
+        IntStream.range(0, students.size())
+                .forEach(i -> students.get(i).setGeneralRank(i+1));
 
-        // Category ranks
+        // Assign category ranks
         Map<Category, Integer> categoryCounter = new EnumMap<>(Category.class);
-        for (Student s : sorted) {
+        students.stream().forEachOrdered(s -> {
             int rank = categoryCounter.getOrDefault(s.getCategory(), 0) + 1;
             s.setCategoryRank(rank);
             categoryCounter.put(s.getCategory(), rank);
+        });
+
+        repository.saveAll(students);
+    }
+
+    public void updateStudentDetails(Student incoming) {
+        Student existing = repository.findById(incoming.getRollNo())
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with Roll No: " + incoming.getRollNo()));
+
+        if (!incoming.getSchoolCode().matches("^[A-Z]{3}\\d{3}$")) {
+            throw new BadRequestException("Invalid school code format.");
         }
 
-        repository.saveAll(sorted);
-        return true;
+        existing.setName(incoming.getName());
+        existing.setSchoolCode(incoming.getSchoolCode());
+
+        repository.save(existing);
     }
 
-    public boolean modifyStudent(Long rollNo, String name, String schoolCode) {
-        Student s = repository.findById(rollNo)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-
-        if (!schoolCode.matches("^[A-Z]{3}\\d{3}$")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid school code");
-        }
-
-        s.setName(name);
-        s.setSchoolCode(schoolCode);
-        repository.save(s);
-        return true;
+    public List<Student> getStudentsByCategory(Category category) {
+        return repository.findAllByCategoryOrderByCategoryRankAsc(category);
     }
 
-    public List<Student> getByCategory(Category category) {
-        return repository.findByCategoryOrderByCategoryRankAsc(category);
-    }
-
-    public List<Student> getGeneralRankList() {
+    public List<Student> getStudentsByGeneralRank() {
         return repository.findAllByOrderByGeneralRankAsc();
     }
 
-    public Student getDetails(Long rollNo) {
+    public Student getStudentDetails(Long rollNo) {
         return repository.findById(rollNo)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with Roll No: " + rollNo));
     }
 
-    public void clearAll() {
+    public void clearAllStudents() {
         repository.deleteAll();
     }
 }

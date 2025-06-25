@@ -1,9 +1,11 @@
 package com.example.rankmanagementsystem.controller;
 
+import com.example.rankmanagementsystem.exception.ApiResponse;
 import com.example.rankmanagementsystem.service.StudentService;
 import com.example.rankmanagementsystem.enums.Category;
 import com.example.rankmanagementsystem.model.Student;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -15,51 +17,41 @@ import java.util.Map;
 public class StudentController {
 
     @Autowired
-    private StudentService service;
+    private StudentService studentService;
 
-    @PutMapping("/store")
-    public boolean store(@RequestBody List<Student> students) {
-        return service.storeStudents(students);
+    @PostMapping("/store")
+    public ResponseEntity<ApiResponse<Void>> storeStudents(@RequestBody List<Student> students) {
+        studentService.saveAllStudents(students);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Students stored and ranked successfully"));
     }
 
-    @PostMapping("/modify")
-    public boolean modify(@RequestBody Map<String, String> data) {
-        Long rollNo = Long.parseLong(data.get("rollNo"));
-        return service.modifyStudent(rollNo, data.get("name"), data.get("schoolCode"));
+    @PutMapping("/modify")
+    public ResponseEntity<ApiResponse<Void>> updateStudent(@RequestBody Student student) {
+        studentService.updateStudentDetails(student);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Student updated successfully"));
     }
 
     @GetMapping("/category/{category}")
-    public List<Map<String, Object>> getByCategory(@PathVariable Category category) {
-        return service.getByCategory(category).stream()
-                .map(s -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("categoryRank", s.getCategoryRank());
-                    map.put("rollNo", s.getRollNo());
-                    map.put("schoolCode", s.getSchoolCode());
-                    return map;
-                }).toList();
+    public ResponseEntity<ApiResponse<List<Student>>> getByCategory(@PathVariable Category category) {
+        List<Student> result = studentService.getStudentsByCategory(category);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Category students fetched successfully", result));
     }
 
-    @GetMapping("/category/gendral")
-    public List<Map<String, Object>> getGeneralRankList() {
-        return service.getGeneralRankList().stream()
-                .map(s -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("generalRank", s.getGeneralRank());
-                    map.put("rollNo", s.getRollNo());
-                    map.put("schoolCode", s.getSchoolCode());
-                    return map;
-                }).toList();
+    @GetMapping("/general")
+    public ResponseEntity<ApiResponse<List<Student>>> getByGeneralRank() {
+        List<Student> result = studentService.getStudentsByGeneralRank();
+        return ResponseEntity.ok(new ApiResponse<>(true, "General rank students fetched successfully", result));
     }
 
     @GetMapping("/details")
-    public Student getDetails(@RequestHeader("rollNo") Long rollNo) {
-        return service.getDetails(rollNo);
+    public ResponseEntity<ApiResponse<Student>> getStudentDetails(@RequestHeader("rollNo") Long rollNo) {
+        Student student = studentService.getStudentDetails(rollNo);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Student details fetched successfully", student));
     }
 
     @DeleteMapping("/clear")
-    public void clear() {
-        service.clearAll();
+    public ResponseEntity<ApiResponse<Void>> clearAll() {
+        studentService.clearAllStudents();
+        return ResponseEntity.ok(new ApiResponse<>(true, "All student records cleared"));
     }
 }
-
