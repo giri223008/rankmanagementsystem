@@ -1,5 +1,6 @@
 package com.example.rankmanagementsystem.service;
 
+import com.example.rankmanagementsystem.dto.StudentRequestDTO;
 import com.example.rankmanagementsystem.enums.Category;
 import com.example.rankmanagementsystem.exception.BadRequestException;
 import com.example.rankmanagementsystem.exception.ResourceNotFoundException;
@@ -17,12 +18,12 @@ public class StudentService {
     @Autowired
     private StudentRepository repository;
 
-    public void saveAllStudents(List<Student> inputList) {
-        if (inputList.stream().map(Student::getRollNo).distinct().count() != inputList.size()) {
+    public void saveAllStudents(List<StudentRequestDTO> inputList) {
+        if (inputList.stream().map(StudentRequestDTO::getRollNo).distinct().count() != inputList.size()) {
             throw new BadRequestException("Duplicate roll numbers found.");
         }
 
-        for (Student s : inputList) {
+        for (StudentRequestDTO s : inputList) {
             if (!s.getSchoolCode().matches("^[A-Z]{3}\\d{3}$")) {
                 throw new BadRequestException("Invalid school code for rollNo: " + s.getRollNo());
             }
@@ -34,6 +35,13 @@ public class StudentService {
         repository.deleteAll();
 
         List<Student> students = inputList.stream()
+                .map(dto -> Student.builder()
+                        .rollNo(dto.getRollNo())
+                        .name(dto.getName())
+                        .schoolCode(dto.getSchoolCode())
+                        .cutoff(dto.getCutoff())
+                        .category(dto.getCategory())
+                        .build())
                 .sorted(Comparator.comparingDouble(Student::getCutoff).reversed())
                 .collect(Collectors.toList());
 
@@ -52,7 +60,7 @@ public class StudentService {
         repository.saveAll(students);
     }
 
-    public void updateStudentDetails(Student incoming) {
+    public void updateStudentDetails(StudentRequestDTO incoming) {
         Student existing = repository.findById(incoming.getRollNo())
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with Roll No: " + incoming.getRollNo()));
 

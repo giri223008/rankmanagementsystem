@@ -14,6 +14,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@Builder
 @Table(name = "student")
 public class Student {
 
@@ -34,4 +35,7 @@ public class Student {
 
     private int generalRank;
     private int categoryRank;
+
+    public Student(Long rollNo, String name, String schoolCode, double cutoff, Category category) {
+    }
 }
